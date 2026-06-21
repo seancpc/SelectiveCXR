@@ -111,6 +111,7 @@ The framework fits scenarios that **simultaneously** satisfy three conditions: *
 - This project is for **research and technical demonstration, not a clinical diagnostic tool**, and must not be used for actual clinical decisions.
 - MIMIC-CXR is governed by the PhysioNet Data Use Agreement (DUA); **image data is not publicly redistributed** — use public or de-identified CXR for demos.
 - MedGemma and similar models are research-use licensed.
+- The project's **own code is MIT-licensed** (see `LICENSE`); the MIMIC data and the models it depends on carry their own licenses, unaffected by this.
 
 ---
 
@@ -216,3 +217,4 @@ The framework fits scenarios that **simultaneously** satisfy three conditions: *
 - 本專案為**研究與技術展示用途,非臨床診斷工具**,不得用於實際臨床決策。
 - 使用之 MIMIC-CXR 受 PhysioNet 資料使用協議(DUA)規範,**不公開散布影像資料**;demo 展示請使用公開或去識別 CXR。
 - MedGemma 等模型授權為 research-use。
+- 本專案**自有程式碼採 MIT License**(見 `LICENSE`);所依賴的 MIMIC 資料與各模型仍受其原本授權規範,不受此影響。
