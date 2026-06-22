@@ -32,6 +32,7 @@
     border-radius: 0 6px 6px 0; padding: 1rem 1.1rem; margin: 1.6rem 0;
   }
   h2 { color: var(--heading); font-weight: bold; font-size: 1.5rem; margin: 2.5rem 0 0.8rem; }
+  h3 { color: #ffffff; font-weight: bold; font-size: 1.12rem; margin: 1.9rem 0 0.4rem; }
   a { color: var(--link); text-decoration: none; }
   a:hover { text-decoration: underline; }
   strong { color: #ffffff; }
@@ -74,9 +75,8 @@
 <body>
 <div class="container">
 
-  <h1>SelectiveCXR</h1>
-  <p class="subtitle">具統計保證的選擇性胸腔 X 光判讀系統</p>
-  <p class="badges">Python · PyTorch · vLLM · transformers · Conformal Prediction · Gradio · RTX 4090</p>
+  <h1>選擇性胸腔 X 光判讀系統（SelectiveCXR）</h1>
+  <p class="subtitle">Selective Chest X-ray Interpretation with Multi-Source Uncertainty &amp; Conformal Guarantees</p>
 
   <p class="lead">
     一個「<strong>會說我不確定</strong>」的 AI 判讀系統 —— 有把握就自動判讀,沒把握就誠實標記、交給人類專家。
@@ -85,7 +85,7 @@
   </p>
 
   <h2>設計概念</h2>
-  <p>這個專案<strong>不拼判讀準確率</strong>(那是紅海),而是拼 <strong>可信賴的自動化</strong> —— 讓 AI 知道自己<strong>何時不可靠</strong>,把不確定的交給人。三個核心:</p>
+  <p>這個專案<strong>不拼判讀準確率</strong>,而是拼 <strong>可信賴的自動化</strong> —— 讓 AI 知道自己<strong>何時不可靠</strong>,把不確定的交給人。三個核心:</p>
   <ul>
     <li><strong>選擇性棄答</strong>:有把握自動判讀、沒把握主動棄答轉人工,而不是對每張片子都硬給答案。</li>
     <li><strong>多源不確定性 + 統計保證</strong>:用三個跨 backbone 模型的<strong>判斷分歧</strong>量化不確定性,再用 conformal prediction 給出「自動判讀部分錯誤率 ≤ α」的 distribution-free 保證。</li>
@@ -99,14 +99,8 @@
     <li><strong>驗證規模</strong>:MIMIC-CXR,calibration 1000 + test 671 張,14 病徵,α = 0.15 操作點。</li>
   </ul>
 
-  <h2>連結</h2>
-  <div class="btns">
-    <a class="btn primary" href="https://github.com/seancpc/SelectiveCXR">🔗 原始碼(GitHub)</a>
-    <a class="btn" href="#" data-todo="youtube">▶️ 觀看 Demo 影片（待補）</a>
-  </div>
-
   <h2>系統架構</h2>
-  <p>三個「出身不同」的視覺語言模型各自判讀同一張片子,用它們之間的<strong>判斷分歧</strong>當不確定性訊號,經 conformal 校準後做三檔分流。</p>
+  <p>三個「出身不同」的 VLM(視覺語言模型)各自判讀同一張片子,用它們之間的<strong>判斷分歧</strong>當不確定性訊號,經 conformal 校準後做三檔分流。</p>
   <pre>
               胸腔 X 光
                   │
@@ -135,7 +129,7 @@
   <table>
     <tr><th>類別</th><th>技術堆疊</th></tr>
     <tr><td>模型(自架)</td><td>Qwen3-VL-8B、MedGemma-1.5-4b、Llama-3.2-11B-Vision(4-bit 量化,三模型共 ~17 GB / 24 GB)</td></tr>
-    <tr><td>推論引擎</td><td>vLLM(continuous batching,~28× 提速)+ transformers(混合引擎,跑 vLLM 不支援的 Mllama)</td></tr>
+    <tr><td>推論引擎</td><td>vLLM(continuous batching,~28× 提速)+ transformers(混合引擎,跑 vLLM 當時不支援的 Llama-3.2-Vision)</td></tr>
     <tr><td>不確定性與決策</td><td>跨模型 disagreement、Conformal Prediction(Mondrian / per-label)、三檔分流</td></tr>
     <tr><td>對比實驗</td><td>TorchXRayVision DenseNet(CNN baseline)、per-label AUC(不依賴 threshold)</td></tr>
     <tr><td>前端</td><td>Gradio(白話化 demo,病徵中文、合併視覺化)</td></tr>
@@ -151,21 +145,33 @@
     <li><strong>多標籤聯合棄答(結構性發現)</strong>:在嚴格 α=0.05 下,每張片子棄答數高度集中、「整張零棄答」幾乎不發生 —— 揭示多標籤 selective prediction 的結構性挑戰。展示採 α=0.15 操作點,使三檔都能呈現;α=0.05 的真實分布如實記錄,展示操作點 ≠ 隱藏真相。</li>
   </ul>
 
-  <h2>Demo 展示</h2>
-  <p>用可自由散布的公開影像(NIH ChestX-ray14)展示,不含受 DUA 規範的 MIMIC 影像。</p>
-  <div class="placeholder" data-todo="screenshots">demo 截圖待補(高度自動 / 部分標記 / 整案轉人工 三檔的決策卡 + 合併視覺化)</div>
-  <div class="note">
-    一個值得一提的觀察:NIH 影像對系統而言是 <strong>out-of-distribution</strong>(棄答門檻在 MIMIC 校準)。系統在這份陌生資料上<strong>明顯更保守</strong>(大量「部分標記 / 轉人工」、極少「高度自動」)—— 這正是可信賴系統該有的行為:<strong>面對沒見過的分布更謹慎、不輕易自動放行</strong>。
-  </div>
+  <h2>開發歷程</h2>
+  <p>開發過程不是「一路成功」,而是一連串「遇到問題 → 驗證 → 誠實修正」。以下是幾個關鍵節點:</p>
 
-  <h2>開發歷程(誠實的工程判斷)</h2>
-  <p>開發過程不是「一路成功」,而是一連串<strong>驗證 → 發現問題 → 修正</strong>:</p>
-  <ul>
-    <li>✅ <strong>disagreement 訊號有效</strong>:選擇性判讀後,自動判讀部分的準確率顯著高於全答。</li>
-    <li>❌ <strong>驗證後放棄一個無效訊號</strong>:曾假設「模型對病灶定位(grounding)的分歧」可當不確定性訊號,但 AUC 嚴格驗證後發現無區辨力(VLM 判斷可靠、定位不可靠),選擇移除而非硬塞無效訊號。</li>
-    <li>🔧 <strong>看穿真正的約束</strong>:第三模型候選一再卡在推論框架的版本相容性,而非模型本身。意識到「約束是 vLLM 而非模型」後,改用 transformers 跑 Llama-3.2-Vision,回到理想的跨 backbone 設計。</li>
-    <li>📊 <strong>推翻自己</strong>:初版 CNN vs VLM 對比一度顯示「VLM 碾壓 CNN」,但 CNN 準確率 0.188 這個荒謬數字觸發警覺 —— 發現是 threshold 假象,改用不依賴 threshold 的 per-label AUC 重做,得到誠實結論。</li>
-  </ul>
+  <h3>① 怎麼讓 AI 知道自己「不可靠」、該棄答?</h3>
+  <p><strong>解決方式</strong>:用三個跨 backbone 模型的判斷分歧(disagreement)當不確定性訊號。驗證確認有效 —— 棄答最不確定的樣本後,自動判讀部分的準確率達 <strong>0.919</strong>,遠高於全答的 0.783;且 conformal 實際錯誤率 0.081,符合「≤ α」的保證。</p>
+  <img class="shot" src="screenshots/selective-eval.png" alt="選擇性判讀核心驗證">
+  <p class="caption">選擇性判讀評測:selective accuracy 0.919 vs 全答 0.783,conformal 實際錯誤率 0.081。</p>
+
+  <h3>② 「病灶定位(grounding)的分歧」能不能當另一個訊號?</h3>
+  <p><strong>解決方式</strong>:用 AUC 嚴格驗證,發現跨模型 bbox IoU(定義 B,AUC 0.459)與解剖模型驗證(定義 A,AUC 0.434)都 &lt; 0.5,沒有區辨力。根因是 VLM「判斷」可靠但「定位」能力本質不足 —— 誠實移除,不硬塞無效訊號。</p>
+  <img class="shot" src="screenshots/grounding-auc.png" alt="grounding 定義 A/B 驗證">
+  <p class="caption">grounding 兩種定義的預測 AUC 均 &lt; 0.5,確認無效後移除。</p>
+
+  <h3>③ 第三模型一直跑不起來,問題出在哪?</h3>
+  <p><strong>解決方式</strong>:候選模型反覆卡在推論框架(vLLM)的版本相容性,而非模型本身。意識到「約束是 vLLM 而非模型」後,改用 transformers 跑 Llama-3.2-Vision,回到理想的跨 backbone 設計(混合引擎,對前端無影響)。</p>
+
+  <h3>④ 通用 VLM ensemble 的判斷品質,比得上專用 CNN 嗎?</h3>
+  <p><strong>解決方式</strong>:用 per-label AUC(不依賴 threshold)做公平對比 —— CNN <strong>0.626</strong> 略勝 VLM ensemble <strong>0.585</strong>,誠實承認、不誇大;但兩者逐病徵互有勝負、錯誤不相關,反而成為「CNN + VLM 混合」的理論基礎。</p>
+  <img class="shot" src="cnn-vs-vlm-auc.svg" alt="CNN vs VLM per-label AUC 對比圖">
+  <p class="caption">每個病徵的 per-label AUC:CNN(青) vs VLM(橘)。CNN 平均略高(0.626 vs 0.585),但<strong>逐病徵互有勝負</strong> —— Pneumonia、Lung Lesion、Fracture、Lung Opacity 等 VLM 反而較佳,代表兩者錯誤不相關。</p>
+  <img class="shot" src="screenshots/cnn-vs-vlm.png" alt="CNN vs VLM ensemble 終端機原始輸出">
+  <p class="caption">原始終端機輸出,佐證上圖數據。</p>
+
+  <h3>⑤ 嚴格 α=0.05 下幾乎全部「轉人工」,系統還可用嗎?</h3>
+  <p><strong>解決方式</strong>:診斷發現是多標籤聯合棄答的結構性挑戰(label 越多,「整張零棄答」越難發生)。改採 α=0.15 操作點 + 雙分界三檔,讓「高度自動 / 部分標記 / 整案轉人工」都能呈現;同時誠實標出 2 個 disagreement 救不回的能力邊界病徵(門檻 −inf,固定交人工)。</p>
+  <img class="shot" src="screenshots/conformal-thresholds.png" alt="conformal 門檻表">
+  <p class="caption">per-label conformal 門檻:Cardiomegaly、Lung Opacity 為 −inf(能力邊界,固定交人工)。</p>
 
   <h2>未來可擴展性</h2>
   <ul>
@@ -181,7 +187,7 @@
   </ul>
 
   <footer>
-    <a href="#" data-todo="home">← 返回作品集主頁（待補）</a>
+    <a href="https://meadow-sky-dfe.notion.site/Sean-Chuang-AI-1ec37081de33803ea095efee6f45a142">← 返回作品集主頁</a>
   </footer>
 
 </div>
