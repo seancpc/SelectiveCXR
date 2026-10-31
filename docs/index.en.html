@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SelectiveCXR — Selective Chest X-ray Interpretation with Conformal Error Control</title>
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --text: #e0e0e0;
+    --heading: #00bcd4;
+    --link: #58a6ff;
+    --code-bg: #2a2a2a;
+    --border: #333;
+    --muted: #9aa0a6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+  h1 { color: var(--heading); font-weight: bold; font-size: 2rem; margin: 0 0 0.3rem; }
+  .subtitle { color: var(--text); font-size: 1.1rem; margin: 0; }
+  .lang { text-align: right; font-size: 0.9rem; margin: 0 0 1.2rem; }
+  .banner {
+    background: #232323; border: 1px solid var(--border); border-radius: 6px;
+    padding: 0.7rem 1rem; margin: 0.9rem 0 0; font-size: 0.9rem;
+  }
+  .banner strong { color: var(--heading); }
+  .lead {
+    background: #232323; border-left: 4px solid var(--heading);
+    border-radius: 0 6px 6px 0; padding: 1rem 1.1rem; margin: 1.6rem 0;
+  }
+  h2 { color: var(--heading); font-weight: bold; font-size: 1.5rem; margin: 2.5rem 0 0.8rem; }
+  h3 { color: #ffffff; font-weight: bold; font-size: 1.12rem; margin: 1.9rem 0 0.4rem; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { color: #ffffff; }
+  ul { padding-left: 1.4rem; margin: 0.7rem 0; }
+  li { margin: 0.4rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.8rem; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); white-space: nowrap; }
+  pre {
+    background: var(--code-bg); padding: 1rem; border-radius: 6px;
+    overflow-x: auto; font-size: 0.78rem; line-height: 1.45;
+    font-family: Consolas, monospace; color: var(--text);
+  }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-size: 90%; }
+  img.shot { max-width: 760px; width: 100%; border: 1px solid var(--border); border-radius: 6px; }
+  .caption { font-size: 0.85rem; color: var(--muted); }
+  footer {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 0.95rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <p class="lang">English ｜ <a href="index.html">繁體中文</a></p>
+
+  <h1>Selective Chest X-ray Interpretation (SelectiveCXR)</h1>
+  <p class="subtitle">Selective Chest X-ray Interpretation with Multi-Source Uncertainty &amp; Conformal Error Control</p>
+  <div class="banner">An AI that says "I'm not sure" · <strong>selective accuracy 0.893 after abstention (0.805 answer-all)</strong> · Conformal-calibrated error control (≤ α on the calibration distribution) · a single RTX 4090</div>
+
+  <p class="lead">
+    An AI that <strong>knows when to say "I'm not sure."</strong> When confident, it reads autonomously; when unsure, it honestly flags the case and defers to a human expert.
+    Validated on chest X-rays (CXR), but the framework is <strong>domain-agnostic</strong>: the same logic fits defect inspection, financial risk control — any setting where errors are costly and trust must be provable.
+  </p>
+
+  <h2>Design Concept</h2>
+  <p>This project is <strong>not chasing diagnostic accuracy</strong> (a red ocean) but <strong>trustworthy automation</strong> — letting the AI know <strong>when it is unreliable</strong> and deferring those cases to humans (academically: <strong>selective prediction / learning to defer</strong>). Three pillars:</p>
+  <ul>
+    <li><strong>Selective abstention</strong>: read autonomously when confident, actively abstain and defer when not — instead of forcing an answer on every image.</li>
+    <li><strong>Multi-source uncertainty + calibrated error control</strong>: quantify uncertainty from the <strong>disagreement</strong> of three cross-backbone models, then use conformal prediction to control the error rate on auto-read cases at ≤ α under calibration conditions (not guaranteed under data-driven selection or distribution shift — see Known limitations).</li>
+    <li><strong>Paradigm-agnostic</strong>: the front-end model is swappable (VLM / CNN / hybrid) while the uncertainty and decision layers stay untouched — the pivot for "medical → cross-domain" transfer.</li>
+  </ul>
+
+  <h2>Overview</h2>
+  <p>Like a good resident: <strong>reads most images independently, but knows when to ask the attending physician</strong>. Today's medical AI's real danger isn't being wrong — it's being <strong>confidently</strong> wrong, giving a definitive answer for every image. SelectiveCXR aims for an AI with self-awareness.</p>
+  <ul>
+    <li><strong>Task</strong>: multi-label classification of 14 CheXpert findings on chest X-rays + a three-way triage decision.</li>
+    <li><strong>Scale</strong>: MIMIC-CXR, 1000 calibration + 671 test images, 14 findings, α = 0.15 operating point.</li>
+  </ul>
+
+  <h2>Architecture</h2>
+  <p>Three "differently-born" VLMs (vision-language models) each read the same image; their <strong>disagreement</strong> serves as the uncertainty signal, and after conformal calibration the study is routed into three tiers.</p>
+  <pre>
+                Chest X-ray
+                    │
+     ┌──────────────┼──────────────┐
+     ▼              ▼              ▼
+  Qwen3-VL      MedGemma      Llama-3.2-V     ← three cross-backbone VLMs
+  (general)     (medical)     (general)          uncorrelated errors → disagreement is meaningful
+     └──────────────┼──────────────┘
+                    ▼
+        cross-model disagreement              ← uncertainty signal
+                    ▼
+         Conformal Prediction calibration      ← error ≤ α on the calibration distribution
+                    ▼
+              three-way triage
+     ┌──────────────┼──────────────┐
+     ▼              ▼              ▼
+   auto-read    flag-review    refer-to-human</pre>
+  <ul>
+    <li><strong>Cross-backbone ensemble</strong>: deliberately three different-origin models (Qwen / Gemma / Llama). Architectural diversity → uncorrelated errors → when they "argue," it is a genuinely hard case.</li>
+    <li><strong>Disagreement as signal</strong>: the more the three models disagree on a finding, the more likely the system abstains.</li>
+    <li><strong>Conformal Prediction</strong>: statistically derives the abstention threshold, controlling the error rate at ≤ α under calibration conditions rather than relying on a hand-tuned threshold.</li>
+    <li><strong>Three-way triage</strong>: high-auto / partial-flag / refer-to-human, and it honestly marks the capability boundary (findings it inherently can't judge, always deferred).</li>
+  </ul>
+
+  <h2>Tech Stack</h2>
+  <table>
+    <tr><th>Category</th><th>Stack</th></tr>
+    <tr><td>Models (self-hosted)</td><td>Qwen3-VL-8B, MedGemma-1.5-4b, Llama-3.2-11B-Vision (4-bit quantized, ~17 GB / 24 GB total)</td></tr>
+    <tr><td>Inference engines</td><td>vLLM (continuous batching, ~28× speedup) + transformers (mixed engine, for Llama-3.2-Vision which vLLM didn't support at the time)</td></tr>
+    <tr><td>Uncertainty &amp; decision</td><td>cross-model disagreement, Conformal Prediction (Mondrian / per-label), three-way triage</td></tr>
+    <tr><td>Comparison</td><td>TorchXRayVision DenseNet (CNN baseline), per-label AUC (threshold-free)</td></tr>
+    <tr><td>Front end</td><td>Gradio (plain-language demo, merged visualization)</td></tr>
+    <tr><td>Data</td><td>MIMIC-CXR (CheXpert 14-label); demo uses the public NIH ChestX-ray14</td></tr>
+    <tr><td>Hardware / env</td><td>a single RTX 4090 (WSL2), Python</td></tr>
+  </table>
+
+  <h2>Key Results</h2>
+  <ul>
+    <li><strong>Core selective-prediction validation</strong>: after abstaining on the most uncertain samples, accuracy on the auto-read portion clearly beats answering everything (0.893 vs 0.805 answer-all).</li>
+    <li><strong>Capability boundary = 2 / 14</strong>: the system marks the two high-prevalence findings that disagreement can't rescue (Cardiomegaly, Lung Opacity) as always-deferred, and runs selective prediction on the rest. (At α=0.15, Atelectasis and Pleural Effusion are also 100% deferred on the test set, so 4 findings are effectively always human-read.)</li>
+    <li><strong>CNN vs VLM (per-label AUC, threshold-free)</strong>: CNN <strong>0.626</strong> &gt; VLM ensemble <strong>0.585</strong> — the VLM ensemble is slightly below a dedicated CNN (honest, not overclaimed); but the two <strong>win and lose per-finding and have uncorrelated errors</strong> (CNN stronger on density-type lesions, VLM on morphology-type), which is exactly the basis for a "CNN + VLM hybrid".</li>
+    <li><strong>Multi-label joint abstention (a structural finding)</strong>: under a strict α=0.05, per-image abstention counts are highly concentrated and "zero abstention over a whole study" almost never happens — revealing a structural challenge of multi-label selective prediction. The demo uses an α=0.15 operating point so all three tiers appear; the true α=0.05 distribution is recorded honestly — a display operating point ≠ hiding the truth.</li>
+  </ul>
+  <img class="shot" src="risk-coverage.svg" alt="Risk-Coverage curve">
+  <p class="caption">Risk–Coverage curve (test set, 671 images × 12 findings excluding the 2 capability-boundary findings, 8,052 label-level decisions): x = auto-read fraction, y = error on that subset; closer to the bottom-left is better, with a measured <strong>AURC = 0.11</strong>. On the curve, keeping error ≤15% allows up to <strong>93%</strong> of decisions to be auto-read (an upper bound from ranking test results after the fact; the actual conformal α=0.15 operating point, with thresholds chosen on the calibration set, covers 63.4%); tightening the target to ≤5% collapses coverage to near zero — the system honestly reflects that hard cases cannot even reach 5% error, and defers them rather than faking the target. The canonical figure of selective prediction.</p>
+
+  <h2>Method Positioning &amp; Known Limitations</h2>
+  <p><strong>Positioning</strong>: the abstention threshold is not hand-tuned — it <strong>controls selective risk</strong> on a calibration set (error on the auto-read subset ≤ α), placing it in the <strong>Conformal Risk Control (CRC)</strong> family; an optional Hoeffding upper bound gives a finite-sample guarantee. The closest prior work is <strong>AT-CXR</strong>, "Uncertainty-Aware Agentic Triage for Chest X-rays" (arXiv 2508.19322).</p>
+  <p><strong>Known limitations (engaging the frontier debate honestly)</strong>: recent work argues that "naive conformal prediction should not be used directly for selective classification," for two reasons — (1) <strong>conditional coverage</strong>: for a data-driven selected subset, standard conformal's marginal guarantee doesn't necessarily transfer; (2) <strong>distribution shift</strong>: the guarantee degrades under input / prevalence shift. This project <strong>controls selective risk directly rather than issuing prediction sets</strong>, and tests on out-of-distribution data (NIH, thresholds calibrated on MIMIC) — the system is noticeably more conservative on OOD, matching the safe expectation "when unsure, don't auto-release."</p>
+  <p><strong>The proper path (future work)</strong>: upgrade to Conformal Risk Control / Selective Conformal Risk Control, and adopt shift-aware variants (weighted / adaptive conformal) to restore strict guarantees under shift.</p>
+
+  <h2>Scope &amp; Next</h2>
+  <ul>
+    <li><strong>CNN + VLM hybrid</strong>: the comparison already shows the two have uncorrelated errors and win/lose per-finding — plugging a CNN into the same selective + conformal framework can complement (paradigm-agnostic, the decision layer needs no change).</li>
+    <li><strong>Cross-domain transfer</strong>: fits any scenario that simultaneously has high/asymmetric error cost, a human fallback, and a need for provable trust — defect inspection, financial risk control, insurance underwriting; swap chest X-rays for another image domain, only the front-end model changes.</li>
+  </ul>
+
+  <h2>Development Journey</h2>
+  <p>Development wasn't a straight success — it was a series of "hit a problem → validate → honestly correct". A few key moments:</p>
+
+  <h3>① How does the AI know when it is "unreliable" and should abstain?</h3>
+  <p><strong>Solution</strong>: use the disagreement of three cross-backbone models as the uncertainty signal. Validated as effective — after abstaining on the most uncertain samples, accuracy on the auto-read portion reaches <strong>0.893</strong>, above the 0.805 of answering everything; at α=0.15 the empirical conformal error rate is 0.107, meeting the "≤ α" target (empirical calibration, coverage 63.4%). Calibrating with the Hoeffding upper bound (δ=0.1) is more conservative: selective accuracy 0.913, error 0.087, coverage 48.6%.</p>
+  <img class="shot" src="screenshots/selective-eval.png" alt="Selective prediction core validation">
+  <p class="caption">Selective evaluation (empirical, α=0.15): selective accuracy 0.893 vs 0.805 answer-all; empirical conformal error 0.107; coverage 0.634.</p>
+
+  <h3>② Can the disagreement of lesion <em>localization</em> (grounding) be another signal?</h3>
+  <p><strong>Solution</strong>: strict AUC validation showed both cross-model bbox IoU (Definition B, AUC 0.501) and anatomical-model verification (Definition A, AUC 0.463) score about 0.5 (chance level) — no discriminative power. The root cause is that VLMs are reliable at judging but inherently weak at localizing — honestly removed rather than forcing in a dead signal.</p>
+  <img class="shot" src="screenshots/grounding-auc.png" alt="grounding Definition A/B validation">
+  <p class="caption">Both grounding definitions score an AUC of about 0.5 (Definition B 0.501, Definition A 0.463, chance level); removed after confirming ineffective.</p>
+
+  <h3>③ The third model kept failing to run — where was the real problem?</h3>
+  <p><strong>Solution</strong>: candidate models kept hitting inference-framework (vLLM) version compatibility, not the models themselves. Realizing "the constraint is vLLM, not the model," I ran Llama-3.2-Vision via transformers, restoring the intended cross-backbone design (mixed engines, invisible to the front end).</p>
+
+  <h3>④ Does a general VLM ensemble's judgment match a dedicated CNN?</h3>
+  <p><strong>Solution</strong>: a fair, threshold-free per-label AUC comparison — CNN <strong>0.626</strong> slightly beats the VLM ensemble <strong>0.585</strong>, honestly acknowledged; but the two win/lose per-finding and have uncorrelated errors, which becomes the basis for a "CNN + VLM hybrid".</p>
+  <img class="shot" src="cnn-vs-vlm-auc.svg" alt="CNN vs VLM per-label AUC chart">
+  <p class="caption">Per-label AUC: CNN (cyan) vs VLM (orange). CNN is slightly higher on average (0.626 vs 0.585), but they <strong>win and lose per-finding</strong> — VLM is better on Pneumonia, Lung Lesion, Fracture, Lung Opacity — meaning uncorrelated errors.</p>
+  <img class="shot" src="screenshots/cnn-vs-vlm.png" alt="CNN vs VLM ensemble raw terminal output">
+  <p class="caption">Raw terminal output, corroborating the chart above.</p>
+
+  <h3>⑤ Under a strict α=0.05 almost everything is "refer to human" — is the system still usable?</h3>
+  <p><strong>Solution</strong>: diagnosed as a structural challenge of multi-label joint abstention (more labels → "zero abstention over a whole study" is harder). Adopted an α=0.15 operating point + a two-boundary triage so all three tiers appear; and honestly marked the 2 capability-boundary findings disagreement can't rescue (threshold −inf, always deferred).</p>
+  <img class="shot" src="screenshots/conformal-thresholds.png" alt="conformal threshold table">
+  <p class="caption">Per-label conformal thresholds: Cardiomegaly and Lung Opacity are −inf (capability boundary, always deferred).</p>
+
+  <h2>Data &amp; Compliance</h2>
+  <ul>
+    <li>This project is for <strong>research and technical demonstration, not a clinical diagnostic tool</strong>, and must not be used for actual clinical decisions.</li>
+    <li>MIMIC-CXR is governed by the PhysioNet Data Use Agreement (DUA); <strong>image data is not publicly redistributed</strong>; the demo always uses the public NIH ChestX-ray14.</li>
+    <li>The project's own code is MIT-licensed; MedGemma and similar models are research-use licensed.</li>
+  </ul>
+
+  <footer>
+    <a href="https://app.notion.com/p/Sean-Chuang-AI-Engineer-Portfolio-39537081de3380ed9db7c1f73e6b83e3">← Back to portfolio</a>
+  </footer>
+
+</div>
+</body>
+</html>

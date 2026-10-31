@@ -1,0 +1,58 @@
+# =============================================================================
+# Project MARS — 依賴清單
+# 對應方向:選擇性胸腔 X 光判讀系統
+# 詳見 PROJECT_OVERVIEW.md / IMPLEMENTATION_PLAN.md
+# =============================================================================
+# 安裝:
+#   1. conda create -n mars python=3.10 && conda activate mars
+#   2. PyTorch(CUDA 12.1,RTX 4090):
+#      pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#   3. pip install -r requirements.txt
+#   4. gated 模型(MedGemma)存取:於終端機執行 huggingface-cli login
+# =============================================================================
+
+# --- 核心 ML ---
+# torch 須 >= 2.7:transformers 5.x 頂層用到 float8_e8m0fnu(torch 2.6+ 才有),
+# 且 vLLM 0.11 實測需 torch 2.7/2.8。安裝走 cu128 wheel(driver 591.86 支援)。
+torch>=2.7
+torchvision
+
+# --- Transformers / 模型載入 ---
+transformers>=4.57.0        # Qwen3-VL 硬性需求(官方要求 >=4.57)
+accelerate>=0.34.0
+bitsandbytes>=0.43.0        # 4-bit 量化
+safetensors>=0.4.0
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+einops>=0.8.0
+qwen-vl-utils>=0.0.8        # Qwen3-VL 視覺前處理
+
+# --- Inference Engine(雙軌驗證,Phase 0 任務 0.5 後定案) ---
+vllm>=0.10.0                # continuous batching + PagedAttention,對 transformers 14-24x throughput;
+                            # 三模型同跑需設低 gpu_memory_utilization,Phase 0 實測
+
+# --- Conformal Prediction ---
+mapie>=0.9.0                # split / Mondrian conformal
+
+# --- 影像 / 資料處理 ---
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.5.0
+pillow>=10.2.0
+pydicom>=2.4.0              # DICOM 醫療影像格式
+
+# --- 前端 ---
+gradio>=4.44.0
+
+# --- 工具 ---
+tqdm>=4.66.0
+requests>=2.32.0
+
+# --- 測試 ---
+pytest>=8.0.0
+
+# =============================================================================
+# 選用 / 待 Phase 0 補上:
+#   flash-attn>=2.6.0   Qwen3-VL 加速,需編譯:pip install flash-attn --no-build-isolation
+#   CXR 解剖偵測模型的依賴於 Phase 0 選型後補上(候選:torchxrayvision)
+# =============================================================================

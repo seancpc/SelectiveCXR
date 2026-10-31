@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SelectiveCXR — 具校準錯誤率控制的選擇性胸腔 X 光判讀系統</title>
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --text: #e0e0e0;
+    --heading: #00bcd4;
+    --link: #58a6ff;
+    --code-bg: #2a2a2a;
+    --border: #333;
+    --muted: #9aa0a6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+  h1 { color: var(--heading); font-weight: bold; font-size: 2rem; margin: 0 0 0.3rem; }
+  .subtitle { color: var(--text); font-size: 1.1rem; margin: 0; }
+  .badges { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; font-family: Consolas, monospace; }
+  .lang { text-align: right; font-size: 0.9rem; margin: 0 0 1.2rem; }
+  .banner {
+    background: #232323; border: 1px solid var(--border); border-radius: 6px;
+    padding: 0.7rem 1rem; margin: 0.9rem 0 0; font-size: 0.9rem;
+  }
+  .banner strong { color: var(--heading); }
+  .lead {
+    background: #232323; border-left: 4px solid var(--heading);
+    border-radius: 0 6px 6px 0; padding: 1rem 1.1rem; margin: 1.6rem 0;
+  }
+  h2 { color: var(--heading); font-weight: bold; font-size: 1.5rem; margin: 2.5rem 0 0.8rem; }
+  h3 { color: #ffffff; font-weight: bold; font-size: 1.12rem; margin: 1.9rem 0 0.4rem; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { color: #ffffff; }
+  ul { padding-left: 1.4rem; margin: 0.7rem 0; }
+  li { margin: 0.4rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.8rem; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); white-space: nowrap; }
+  pre {
+    background: var(--code-bg); padding: 1rem; border-radius: 6px;
+    overflow-x: auto; font-size: 0.78rem; line-height: 1.45;
+    font-family: Consolas, monospace; color: var(--text);
+  }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-size: 90%; }
+  .btns { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 1.1rem 0; }
+  .btn {
+    display: inline-block; padding: 0.6rem 1.1rem;
+    border: 1px solid var(--link); border-radius: 6px;
+    color: var(--link); font-size: 0.95rem; font-weight: 500;
+  }
+  .btn:hover { background: var(--link); color: var(--bg); text-decoration: none; }
+  .btn.primary { background: var(--heading); border-color: var(--heading); color: var(--bg); }
+  .btn.primary:hover { opacity: 0.85; color: var(--bg); }
+  .note {
+    background: #2a2620; border-left: 4px solid #d4a017;
+    border-radius: 0 6px 6px 0; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.95rem;
+  }
+  .placeholder {
+    background: var(--code-bg); border: 1px dashed #555; border-radius: 6px;
+    padding: 2.5rem 1.5rem; text-align: center; color: var(--muted); margin: 1rem 0;
+  }
+  img.shot { max-width: 760px; width: 100%; border: 1px solid var(--border); border-radius: 6px; }
+  .caption { font-size: 0.85rem; color: var(--muted); }
+  footer {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 0.95rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <p class="lang"><a href="index.en.html">English</a> ｜ 繁體中文</p>
+
+  <h1>選擇性胸腔 X 光判讀系統（SelectiveCXR）</h1>
+  <p class="subtitle">Selective Chest X-ray Interpretation with Multi-Source Uncertainty &amp; Conformal Error Control</p>
+  <div class="banner">會說「我不確定」的選擇性判讀 · <strong>棄答後 selective accuracy 0.893(全答 0.805)</strong> · Conformal 校準錯誤率控制(校準分布下 ≤ α) · 單卡 RTX 4090</div>
+
+  <p class="lead">
+    一個「<strong>會說我不確定</strong>」的 AI 判讀系統 —— 有把握就自動判讀,沒把握就誠實標記、交給人類專家。
+    以胸腔 X 光(CXR)驗證,但<strong>框架領域無關</strong>:同一套邏輯可用於缺陷檢測、金融風控等任何
+    「錯誤成本高 + 需要可證明信任」的場景。
+  </p>
+
+  <h2>設計概念</h2>
+  <p>這個專案<strong>不拼判讀準確率</strong>,而是拼 <strong>可信賴的自動化</strong> —— 讓 AI 知道自己<strong>何時不可靠</strong>,把不確定的交給人(學術上稱 <strong>selective prediction / learning to defer</strong>)。三個核心:</p>
+  <ul>
+    <li><strong>選擇性棄答</strong>:有把握自動判讀、沒把握主動棄答轉人工,而不是對每張片子都硬給答案。</li>
+    <li><strong>多源不確定性 + 校準錯誤率控制</strong>:用三個跨 backbone 模型的<strong>判斷分歧</strong>量化不確定性,再用 conformal prediction 在校準條件下控制「自動判讀部分錯誤率 ≤ α」(資料選擇與分布偏移下不必然成立,見已知限制)。</li>
+    <li><strong>範式無關</strong>:前端判讀模型可替換(VLM / CNN / 混合),中間的不確定性與決策層完全不動 —— 這是「醫療 → 跨領域」可遷移的技術支點。</li>
+  </ul>
+
+  <h2>專案簡介</h2>
+  <p>像一個好的實習醫師:<strong>大部分片子能獨立判讀,但知道自己什麼時候該去問主治醫師</strong>。現在的醫療 AI 最危險的不是「看錯」,而是「看錯了還很自信」—— 對每張片子都給斬釘截鐵的答案。SelectiveCXR 要做的是有「自知之明」的 AI。</p>
+  <ul>
+    <li><strong>任務</strong>:胸腔 X 光的 14 種 CheXpert 病徵 multi-label 判定 + 三檔分流決策。</li>
+    <li><strong>驗證規模</strong>:MIMIC-CXR,calibration 1000 + test 671 張,14 病徵,α = 0.15 操作點。</li>
+  </ul>
+
+  <h2>系統架構</h2>
+  <p>三個「出身不同」的 VLM(視覺語言模型)各自判讀同一張片子,用它們之間的<strong>判斷分歧</strong>當不確定性訊號,經 conformal 校準後做三檔分流。</p>
+  <pre>
+              胸腔 X 光
+                  │
+     ┌────────────┼────────────┐
+     ▼            ▼            ▼
+  Qwen3-VL    MedGemma    Llama-3.2-V      ← 三個跨 backbone 的 VLM
+   (通用)      (醫療)       (通用)            錯誤不相關,分歧才有意義
+     └────────────┼────────────┘
+                  ▼
+       跨模型 disagreement(判斷分歧)        ← 不確定性訊號
+                  ▼
+        Conformal Prediction 校準           ← 校準條件下控制錯誤率 ≤ α
+                  ▼
+            三檔分流決策
+     ┌────────────┼────────────┐
+     ▼            ▼            ▼
+   高度自動    部分標記    整案轉人工</pre>
+  <ul>
+    <li><strong>跨 backbone ensemble</strong>:刻意選三個不同來源的模型(Qwen / Gemma / Llama)。架構多樣性 → 錯誤不相關 → 它們「吵架」時才是真的難 case。</li>
+    <li><strong>disagreement 當訊號</strong>:三模型對同一病徵越分歧,越可能棄答。</li>
+    <li><strong>Conformal Prediction</strong>:用統計方法決定棄答門檻,在校準條件下控制錯誤率 ≤ α,而非工程師手調。</li>
+    <li><strong>三檔分流</strong>:高度自動 / 部分標記待確認 / 整案轉人工,並標出系統「天生判不準、固定交人工」的能力邊界。</li>
+  </ul>
+
+  <h2>使用技術</h2>
+  <table>
+    <tr><th>類別</th><th>技術堆疊</th></tr>
+    <tr><td>模型(自架)</td><td>Qwen3-VL-8B、MedGemma-1.5-4b、Llama-3.2-11B-Vision(4-bit 量化,三模型共 ~17 GB / 24 GB)</td></tr>
+    <tr><td>推論引擎</td><td>vLLM(continuous batching,~28× 提速)+ transformers(混合引擎,跑 vLLM 當時不支援的 Llama-3.2-Vision)</td></tr>
+    <tr><td>不確定性與決策</td><td>跨模型 disagreement、Conformal Prediction(Mondrian / per-label)、三檔分流</td></tr>
+    <tr><td>對比實驗</td><td>TorchXRayVision DenseNet(CNN baseline)、per-label AUC(不依賴 threshold)</td></tr>
+    <tr><td>前端</td><td>Gradio(白話化 demo,病徵中文、合併視覺化)</td></tr>
+    <tr><td>資料</td><td>MIMIC-CXR(CheXpert 14-label);demo 展示用公開 NIH ChestX-ray14</td></tr>
+    <tr><td>硬體 / 環境</td><td>單張 RTX 4090(WSL2)、Python</td></tr>
+  </table>
+
+  <h2>成效亮點</h2>
+  <ul>
+    <li><strong>選擇性判讀核心驗證</strong>:棄答最不確定的樣本後,自動判讀部分的準確率明顯優於全答(0.893 vs 全答 0.805)。</li>
+    <li><strong>能力邊界 = 2 / 14</strong>:系統標出 disagreement 救不回的兩個高陽性率病徵(Cardiomegaly、Lung Opacity)固定交人工,其餘做選擇性判讀。(α=0.15 下 Atelectasis、Pleural Effusion 在 test 上也 100% 棄答,實際全數交人工的病徵為 4 個。)</li>
+    <li><strong>CNN vs VLM(per-label AUC,不依賴 threshold)</strong>:CNN <strong>0.626</strong> &gt; VLM ensemble <strong>0.585</strong> —— VLM 判斷品質略遜專用 CNN(誠實,不誇大);但兩者<strong>逐病徵互有勝負、錯誤不相關</strong>(CNN 強密度型病灶、VLM 強型態型),這正是「CNN + VLM 混合」的理論基礎。</li>
+    <li><strong>多標籤聯合棄答(結構性發現)</strong>:在嚴格 α=0.05 下,每張片子棄答數高度集中、「整張零棄答」幾乎不發生 —— 揭示多標籤 selective prediction 的結構性挑戰。展示採 α=0.15 操作點,使三檔都能呈現;α=0.05 的真實分布如實記錄,展示操作點 ≠ 隱藏真相。</li>
+  </ul>
+  <img class="shot" src="risk-coverage.svg" alt="Risk-Coverage 曲線">
+  <p class="caption">Risk–Coverage 曲線(test 子集,671 張 × 12 病徵,排除 2 個能力邊界病徵,共 8,052 個標籤決策):x=自動判讀比例、y=該子集錯誤率,越貼左下越好,實測 <strong>AURC = 0.11</strong>。曲線上錯誤率 ≤15% 時最多可涵蓋 <strong>93%</strong> 的決策(以 test 結果事後排序的上限;conformal 在校準集上選門檻的實際 α=0.15 操作點 coverage 為 63.4%);但把目標收緊到 ≤5%,涵蓋率驟降至近 0 —— 系統誠實呈現「難 case 連 5% 錯誤率都達不到」,寧可交人工也不假裝達標。這是選擇性預測領域最一眼認得的招牌圖。</p>
+
+  <h2>方法定位與已知限制</h2>
+  <p><strong>方法定位</strong>:本系統的棄答門檻不是工程師手調,而是在校準集上<strong>控制 selective risk</strong>(自動判讀子集的錯誤率 ≤ α),屬 <strong>Conformal Risk Control (CRC)</strong> 家族;可選 Hoeffding 上界提供有限樣本保證。最接近的同題工作是 <strong>AT-CXR</strong>《Uncertainty-Aware Agentic Triage for Chest X-rays》(arXiv 2508.19322)。</p>
+  <p><strong>已知限制(誠實面對前沿爭論)</strong>:近期研究指出「naive conformal prediction 不宜直接用於 selective classification」,主因有二 —— (1) <strong>conditional coverage</strong>:對「資料驅動選出的子集」,標準 conformal 的邊際保證不必然轉移;(2) <strong>distribution shift</strong>:輸入 / 盛行率偏移時保證會退化。本專案的做法是<strong>直接控制 selective risk 而非套用預測集</strong>,並用 out-of-distribution 資料(NIH,門檻在 MIMIC 校準)實測 —— 觀察到系統在 OOD 上明顯更保守,符合「不確定就別自動放行」的安全預期。</p>
+  <p><strong>正解路標(未來工作)</strong>:升級到 Conformal Risk Control / Selective Conformal Risk Control,並採用能處理 distribution shift 的變體(weighted / adaptive conformal),在偏移下恢復嚴格保證。</p>
+
+  <h2>範圍與後續</h2>
+  <ul>
+    <li><strong>CNN + VLM 混合</strong>:對比實驗已證明兩者錯誤不相關、逐病徵互有勝負 —— 把 CNN 接進同一個 selective + conformal 框架,可截長補短(框架範式無關,決策層不需改動)。</li>
+    <li><strong>跨領域遷移</strong>:同時滿足「錯誤成本高 / 有人工 fallback / 需可證明信任」的場景皆適用 —— 缺陷檢測、金融風控、保險核保等;把胸腔 X 光換成其他影像,只需更換前端判讀模型。</li>
+  </ul>
+
+  <h2>開發歷程</h2>
+  <p>開發過程不是「一路成功」,而是一連串「遇到問題 → 驗證 → 誠實修正」。以下是幾個關鍵節點:</p>
+
+  <h3>① 怎麼讓 AI 知道自己「不可靠」、該棄答?</h3>
+  <p><strong>解決方式</strong>:用三個跨 backbone 模型的判斷分歧(disagreement)當不確定性訊號。驗證確認有效 —— 棄答最不確定的樣本後,自動判讀部分的準確率達 <strong>0.893</strong>,高於全答的 0.805;α=0.15 下 conformal 實際錯誤率 0.107,符合「≤ α」的目標(empirical 校準,coverage 63.4%)。改用 Hoeffding 上界(δ=0.1)校準時更保守:selective accuracy 0.913、實際錯誤率 0.087、coverage 48.6%。</p>
+  <img class="shot" src="screenshots/selective-eval.png" alt="選擇性判讀核心驗證">
+  <p class="caption">選擇性判讀評測(empirical,α=0.15):selective accuracy 0.893 vs 全答 0.805,conformal 實際錯誤率 0.107,coverage 0.634。</p>
+
+  <h3>② 「病灶定位(grounding)的分歧」能不能當另一個訊號?</h3>
+  <p><strong>解決方式</strong>:用 AUC 嚴格驗證,發現跨模型 bbox IoU(定義 B,AUC 0.501)與解剖模型驗證(定義 A,AUC 0.463)都約等於 0.5(等同隨機猜測),沒有區辨力。根因是 VLM「判斷」可靠但「定位」能力本質不足 —— 誠實移除,不硬塞無效訊號。</p>
+  <img class="shot" src="screenshots/grounding-auc.png" alt="grounding 定義 A/B 驗證">
+  <p class="caption">grounding 兩種定義的預測 AUC 均約 0.5(定義 B 0.501、定義 A 0.463,等同隨機),確認無效後移除。</p>
+
+  <h3>③ 第三模型一直跑不起來,問題出在哪?</h3>
+  <p><strong>解決方式</strong>:候選模型反覆卡在推論框架(vLLM)的版本相容性,而非模型本身。意識到「約束是 vLLM 而非模型」後,改用 transformers 跑 Llama-3.2-Vision,回到理想的跨 backbone 設計(混合引擎,對前端無影響)。</p>
+
+  <h3>④ 通用 VLM ensemble 的判斷品質,比得上專用 CNN 嗎?</h3>
+  <p><strong>解決方式</strong>:用 per-label AUC(不依賴 threshold)做公平對比 —— CNN <strong>0.626</strong> 略勝 VLM ensemble <strong>0.585</strong>,誠實承認、不誇大;但兩者逐病徵互有勝負、錯誤不相關,反而成為「CNN + VLM 混合」的理論基礎。</p>
+  <img class="shot" src="cnn-vs-vlm-auc.svg" alt="CNN vs VLM per-label AUC 對比圖">
+  <p class="caption">每個病徵的 per-label AUC:CNN(青) vs VLM(橘)。CNN 平均略高(0.626 vs 0.585),但<strong>逐病徵互有勝負</strong> —— Pneumonia、Lung Lesion、Fracture、Lung Opacity 等 VLM 反而較佳,代表兩者錯誤不相關。</p>
+  <img class="shot" src="screenshots/cnn-vs-vlm.png" alt="CNN vs VLM ensemble 終端機原始輸出">
+  <p class="caption">原始終端機輸出,佐證上圖數據。</p>
+
+  <h3>⑤ 嚴格 α=0.05 下幾乎全部「轉人工」,系統還可用嗎?</h3>
+  <p><strong>解決方式</strong>:診斷發現是多標籤聯合棄答的結構性挑戰(label 越多,「整張零棄答」越難發生)。改採 α=0.15 操作點 + 雙分界三檔,讓「高度自動 / 部分標記 / 整案轉人工」都能呈現;同時誠實標出 2 個 disagreement 救不回的能力邊界病徵(門檻 −inf,固定交人工)。</p>
+  <img class="shot" src="screenshots/conformal-thresholds.png" alt="conformal 門檻表">
+  <p class="caption">per-label conformal 門檻:Cardiomegaly、Lung Opacity 為 −inf(能力邊界,固定交人工)。</p>
+
+  <h2>資料與合規</h2>
+  <ul>
+    <li>本專案為<strong>研究與技術展示用途,非臨床診斷工具</strong>,不得用於實際臨床決策。</li>
+    <li>使用之 MIMIC-CXR 受 PhysioNet 資料使用協議(DUA)規範,<strong>不公開散布影像資料</strong>;demo 展示一律使用公開的 NIH ChestX-ray14。</li>
+    <li>自有程式碼採 MIT License;MedGemma 等模型授權為 research-use。</li>
+  </ul>
+
+  <footer>
+    <a href="https://meadow-sky-dfe.notion.site/Sean-Chuang-AI-1ec37081de33803ea095efee6f45a142">← 返回作品集主頁</a>
+  </footer>
+
+</div>
+</body>
+</html>
